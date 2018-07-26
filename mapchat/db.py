@@ -1,4 +1,3 @@
-import sys
 import time
 import uuid
 
@@ -50,6 +49,9 @@ class Message(Model):
         database = DB
 
 
+ALL_TABLES = [Location, User, Chat, Message]
+
+
 #######################
 #
 #   Helper section
@@ -72,14 +74,14 @@ def create_user(username):
     return User.create(username=username, user_id=generate_user_id()).save()
 
 
-def create_chat(db,owner_id, location):
+def create_chat(db, owner_id, location):
     owner = db.execute(User.select().where(User.user_id == owner_id))
     if owner:
         return Chat.create(owner=owner, location=location, created_at=time.time())
     raise CreateException(f"Could not create the chat for these values: {owner_id},{location}")
 
 
-def create_message(db,message, chat_id):
+def create_message(db, message, chat_id):
     chat = db.execute(Chat.select().where(Chat.chat_id == chat_id))
     if chat:
         return Chat.create(message=message, chat=chat)
@@ -90,20 +92,19 @@ def generate_user_id():
     return str(uuid.uuid4())
 
 
+def drop_tables(db):
+    db.drop_tables(ALL_TABLES)
+
+
 def create_tables(db):
-    try:
-        db.drop_tables([Location, User, Chat, Message])
-    except Exception as err:
-        print(f"Don't cry {err}", file=sys.stderr)
-    db.create_tables([Location, User, Chat, Message])
+    db.create_tables(ALL_TABLES)
 
 
 if __name__ == '__main__':
-    create_tables()
-
+    drop_tables(DB)
+    create_tables(DB)
 
     with DB.atomic() as db:
-
 
         User.insert_many([("nice name", "nice id")], fields=(User.username, User.user_id)).execute()
 
